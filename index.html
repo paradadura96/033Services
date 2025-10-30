@@ -7,12 +7,13 @@
 <style>
 body { background-color: #121212; color: #E0E0E0; font-family: Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
 #app { background-color:#1E1E1E; padding:30px; border-radius:15px; width:90%; max-width:400px; text-align:center; box-shadow:0 0 20px rgba(128,0,255,0.5);}
-input, button { width:100%; padding:10px; margin:8px 0; border-radius:8px; border:none; font-size:16px; }
+input, button, select { width:100%; padding:10px; margin:8px 0; border-radius:8px; border:none; font-size:16px; }
 input { background-color:#2A2A2A; color:#E0E0E0; }
 button { background-color:#8000FF; color:white; cursor:pointer; font-weight:bold; }
 button:hover { background-color:#A040FF; }
 #result { margin-top:15px; font-size:18px; font-weight:bold; white-space: pre-line; }
 #confirmBtn { display:none; margin-top:10px; }
+#bagageQty { display:none; margin-top:5px; }
 </style>
 </head>
 <body>
@@ -20,6 +21,13 @@ button:hover { background-color:#A040FF; }
     <h2>033Services - Corridas Torino</h2>
     <input type="text" id="start" placeholder="Endereço de partida">
     <input type="text" id="end" placeholder="Endereço de destino">
+    <input type="text" id="phone" placeholder="Telefone do cliente">
+    
+    <button id="bagageBtn" onclick="toggleBagage()">Tem bagagem?</button>
+    <input type="number" id="bagageQty" placeholder="Quantidade de bagagens" min="1">
+    
+    <input type="time" id="scheduledTime" placeholder="Agendar horário (opcional)">
+    
     <button onclick="calculateRide()">Calcular Corrida</button>
     <button id="confirmBtn" onclick="sendToTelegram()">Confirmar Corrida</button>
     <div id="result"></div>
@@ -32,10 +40,17 @@ const telegramChatId = '8153703791'; // seu chat id
 
 let lastRide = null;
 
+function toggleBagage() {
+    const qtyInput = document.getElementById('bagageQty');
+    qtyInput.style.display = qtyInput.style.display === 'none' ? 'block' : 'none';
+}
+
 function calculateRide() {
     const start = document.getElementById('start').value.trim();
     const end = document.getElementById('end').value.trim();
-    if(!start || !end) { alert('Preencha ambos os endereços!'); return; }
+    const phone = document.getElementById('phone').value.trim();
+
+    if(!start || !end || !phone) { alert('Preencha partida, destino e telefone!'); return; }
 
     const service = new google.maps.DistanceMatrixService();
     service.getDistanceMatrix({
@@ -51,17 +66,22 @@ function calculateRide() {
         const distanceKm = Math.min(distanceMeters/1000, 15).toFixed(1);
         const price = (5 + distanceKm * 1.5).toFixed(2);
 
-        document.getElementById('result').innerText =
-            `Distância aproximada: ${distanceKm} km\nPreço total: ${price}`;
+        const bagageQty = document.getElementById('bagageQty').style.display === 'block' ? 
+                          document.getElementById('bagageQty').value : '0';
+        const scheduledTime = document.getElementById('scheduledTime').value || 'Não agendado';
 
-        lastRide = {start, end, distanceKm, price};
+        document.getElementById('result').innerText =
+            `Distância aproximada: ${distanceKm} km\nPreço total: ${price}\nBagagens: ${bagageQty}\nHorário agendado: ${scheduledTime}`;
+
+        lastRide = {start, end, distanceKm, price, phone, bagageQty, scheduledTime};
         document.getElementById('confirmBtn').style.display = 'block';
     });
 }
 
 function sendToTelegram() {
     if(!lastRide) return;
-    const text = `🚗 Nova Corrida!\nPonto de partida: ${lastRide.start}\nDestino: ${lastRide.end}\nDistância: ${lastRide.distanceKm} km\nPreço: ${lastRide.price}`;
+
+    const text = `🚗 Nova Corrida!\nPonto de partida: ${lastRide.start}\nDestino: ${lastRide.end}\nDistância: ${lastRide.distanceKm} km\nPreço: ${lastRide.price}\nTelefone: ${lastRide.phone}\nBagagens: ${lastRide.bagageQty}\nHorário agendado: ${lastRide.scheduledTime}`;
 
     const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage?chat_id=${telegramChatId}&text=` + encodeURIComponent(text);
     const img = new Image();
@@ -71,6 +91,10 @@ function sendToTelegram() {
     document.getElementById('confirmBtn').style.display = 'none';
     document.getElementById('start').value = '';
     document.getElementById('end').value = '';
+    document.getElementById('phone').value = '';
+    document.getElementById('bagageQty').value = '';
+    document.getElementById('bagageQty').style.display = 'none';
+    document.getElementById('scheduledTime').value = '';
     document.getElementById('result').innerText = '';
     lastRide = null;
 }
