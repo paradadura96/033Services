@@ -68,17 +68,31 @@ function calculateRide() {
 
         const distanceMeters = element.distance.value;
         const distanceKm = Math.min(distanceMeters/1000, 15).toFixed(1);
-        const price = (5 + distanceKm * 1.5).toFixed(2);
 
+        // Preço base
+        let price = 5 + distanceKm * 1.75;
+
+        // Bagagens extras
         const bagageQty = document.getElementById('bagageQty').style.display === 'block' ? 
-                          document.getElementById('bagageQty').value : '0';
-        const scheduledTime = document.getElementById('scheduledTime').value || 'Não agendado';
-        const urgent = document.getElementById('urgent').checked ? 'Sim' : 'Não';
+                          parseInt(document.getElementById('bagageQty').value) || 0 : 0;
+        if(bagageQty > 3) {
+            const extraBags = bagageQty - 3;
+            const extraCharge = Math.ceil(extraBags / 2) * 2; // 2€ a cada 2 malas extras
+            price += extraCharge;
+        }
+
+        // Urgente
+        const urgent = document.getElementById('urgent').checked;
+        if(urgent) price += 1;
+
+        // Horário agendado
+        const scheduledTime = document.getElementById('scheduledTime').value || '';
+        if(scheduledTime) price += 1;
 
         document.getElementById('result').innerText =
-            `Distância aproximada: ${distanceKm} km\nPreço total: ${price}\nBagagens: ${bagageQty}\nHorário agendado: ${scheduledTime}\nCorrida urgente: ${urgent}`;
+            `Distância aproximada: ${distanceKm} km\nPreço total: ${price.toFixed(2)}\nBagagens: ${bagageQty}\nHorário agendado: ${scheduledTime || 'Não agendado'}\nCorrida urgente: ${urgent ? 'Sim' : 'Não'}`;
 
-        lastRide = {start, end, distanceKm, price, phone, bagageQty, scheduledTime, urgent};
+        lastRide = {start, end, distanceKm, price: price.toFixed(2), phone, bagageQty, scheduledTime: scheduledTime || 'Não agendado', urgent: urgent ? 'Sim' : 'Não'};
         document.getElementById('confirmBtn').style.display = 'block';
     });
 }
