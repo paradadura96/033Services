@@ -59,13 +59,14 @@ function calcularCorrida(){
 
     const service = new google.maps.DistanceMatrixService();
     service.getDistanceMatrix({
-        origins:[start + ", Torino, Italia"],
-        destinations:[end + ", Torino, Italia"],
-        travelMode:'DRIVING'
+        origins:[start + ", Italia Settentrionale"],
+        destinations:[end + ", Italia Settentrionale"],
+        travelMode:'DRIVING',
+        region:'it'
     }, (response, status)=>{
         if(status!=="OK"){ alert("Erro ao calcular distância: "+status); return; }
         const elem = response.rows[0].elements[0];
-        if(elem.status!=="OK"){ alert("Endereço inválido ou fora de Torino!"); return; }
+        if(elem.status!=="OK"){ alert("Endereço inválido ou fora do norte da Itália!"); return; }
 
         const km = elem.distance.value/1000;
         let price = 5 + km*1.75;
