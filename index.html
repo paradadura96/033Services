@@ -5,17 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>033Services 🚗🏁</title>
 <style>
-body { font-family: Arial; padding:20px; background:#111; color:#fff; }
+body { font-family: Arial, sans-serif; background:#111; color:#fff; margin:0; padding:20px;}
+h2 { color:#B23EFF; text-align:center; }
+.box { background:#222; padding:15px; border-radius:10px; margin-bottom:15px;}
 input, button { width:100%; padding:10px; margin:5px 0; border-radius:5px; border:none; }
-input { background:#222; color:#fff; }
-button { background:#8000FF; color:#fff; font-weight:bold; cursor:pointer; }
-button:hover { background:#A040FF; }
-.box { background:#1E1E1E; padding:15px; border-radius:8px; margin-bottom:10px; }
-#result { margin-top:10px; white-space: pre-line; }
+input { background:#1E1E2E; color:#fff; }
+button { background:#B23EFF; color:#fff; font-weight:bold; cursor:pointer; font-size:16px; }
+button:hover { background:#9B1DE5; }
+#result { margin-top:15px; white-space: pre-line; }
 </style>
 <script src="https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE_AQUI"></script>
 </head>
 <body>
+
 <h2>033Services 🚗🏁</h2>
 
 <div class="box">
@@ -38,6 +40,7 @@ button:hover { background:#A040FF; }
 
 <script>
 let lastRide = null;
+
 function calcularCorrida(){
     const start = document.getElementById('partenza').value.trim();
     const end = document.getElementById('arrivo').value.trim();
@@ -71,7 +74,7 @@ function calcularCorrida(){
         price = price.toFixed(2);
 
         document.getElementById('result').innerText = 
-            `Distância: ${km.toFixed(2)} km\nPreço total: ${price}\nExtras:\n${extras||'Nenhum'}`;
+            `Distância: ${km.toFixed(2)} km\nPreço total: ${price} €\nExtras:\n${extras||'Nenhum'}`;
         document.getElementById('confirmButton').style.display='block';
 
         lastRide = {start,end,phone,km:km.toFixed(2),price,extras,horario:agendado?horario:'Não agendado',urgent:urgent?'Sim':'Não',qntBag};
@@ -82,10 +85,13 @@ function enviarTelegram(){
     if(!lastRide) return;
     const BOT_TOKEN="SEU_BOT_TOKEN";
     const CHAT_ID="SEU_CHAT_ID";
-    const text = `🚗 Nova Corrida!\nPonto de partida: ${lastRide.start}\nDestino: ${lastRide.end}\nTelefone: ${lastRide.phone}\nDistância: ${lastRide.km} km\nPreço: ${lastRide.price}\nBagagens: ${lastRide.qntBag}\nHorário: ${lastRide.horario}\nCorrida urgente: ${lastRide.urgent}\nExtras:\n${lastRide.extras}`;
-    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(text)}`;
-    new Image().src=url;
-    alert("Corrida enviada com sucesso!");
+    const text = `🚗 Nova Corrida!\nPonto de partida: ${lastRide.start}\nDestino: ${lastRide.end}\nTelefone: ${lastRide.phone}\nDistância: ${lastRide.km} km\nPreço: ${lastRide.price} €\nBagagens: ${lastRide.qntBag}\nHorário: ${lastRide.horario}\nCorrida urgente: ${lastRide.urgent}\nExtras:\n${lastRide.extras}`;
+    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({chat_id:CHAT_ID,text:text})
+    }).then(()=>alert("Corrida enviada com sucesso!"));
+
     document.getElementById('confirmButton').style.display='none';
     document.getElementById('partenza').value='';
     document.getElementById('arrivo').value='';
