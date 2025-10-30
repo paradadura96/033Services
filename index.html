@@ -5,57 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>033Services - Corridas Torino</title>
 <style>
-    body {
-        background-color: #121212;
-        color: #E0E0E0;
-        font-family: Arial, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-    }
-    #app {
-        background-color: #1E1E1E;
-        padding: 30px;
-        border-radius: 15px;
-        width: 90%;
-        max-width: 400px;
-        text-align: center;
-        box-shadow: 0 0 20px rgba(128,0,255,0.5);
-    }
-    input, button {
-        width: 100%;
-        padding: 10px;
-        margin: 8px 0;
-        border-radius: 8px;
-        border: none;
-        font-size: 16px;
-    }
-    input {
-        background-color: #2A2A2A;
-        color: #E0E0E0;
-    }
-    button {
-        background-color: #8000FF;
-        color: white;
-        cursor: pointer;
-        font-weight: bold;
-    }
-    button:hover {
-        background-color: #A040FF;
-    }
-    #map {
-        margin-top: 20px;
-        height: 200px;
-        width: 100%;
-        border-radius: 10px;
-    }
-    #result {
-        margin-top: 15px;
-        font-size: 18px;
-        font-weight: bold;
-    }
+    body { background-color: #121212; color: #E0E0E0; font-family: Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+    #app { background-color:#1E1E1E; padding:30px; border-radius:15px; width:90%; max-width:400px; text-align:center; box-shadow:0 0 20px rgba(128,0,255,0.5);}
+    input, button { width:100%; padding:10px; margin:8px 0; border-radius:8px; border:none; font-size:16px; }
+    input { background-color:#2A2A2A; color:#E0E0E0; }
+    button { background-color:#8000FF; color:white; cursor:pointer; font-weight:bold; }
+    button:hover { background-color:#A040FF; }
+    #map { margin-top:20px; height:200px; width:100%; border-radius:10px; }
+    #result { margin-top:15px; font-size:18px; font-weight:bold; }
 </style>
 </head>
 <body>
@@ -74,10 +31,10 @@ const telegramBotToken = 'SEU_TOKEN_DO_TELEGRAM'; // substitua pelo seu token
 const telegramChatId = 'SEU_CHAT_ID'; // substitua pelo seu chat id
 
 function calculateRide() {
-    const start = document.getElementById('start').value;
-    const end = document.getElementById('end').value;
+    const start = document.getElementById('start').value.trim();
+    const end = document.getElementById('end').value.trim();
     if(!start || !end) {
-        alert('Por favor, preencha ambos os endereços!');
+        alert('Preencha ambos os endereços!');
         return;
     }
 
@@ -91,14 +48,19 @@ function calculateRide() {
             alert('Erro ao calcular distância: ' + status);
             return;
         }
-        const distanceMeters = response.rows[0].elements[0].distance.value;
-        const distanceKm = (distanceMeters / 1000).toFixed(1);
+        const element = response.rows[0].elements[0];
+        if(element.status !== 'OK') {
+            alert('Endereço fora de Torino ou inválido!');
+            return;
+        }
+        const distanceMeters = element.distance.value;
+        const distanceKm = Math.min(distanceMeters/1000, 15).toFixed(1); // limita 15 km
         const price = (5 + distanceKm * 1.5).toFixed(2);
 
         document.getElementById('result').innerText =
-            `Distância aproximada: ${distanceKm} km\nPreço total: ${price}`;
+            `Distância aproximada: ${distanceKm} km\nPreço total: ${price} €`;
 
-        // Exibir mapa
+        // Mostrar mapa
         const map = new google.maps.Map(document.getElementById('map'), {
             zoom: 12,
             center: {lat: 45.07, lng: 7.69}
