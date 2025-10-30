@@ -34,18 +34,23 @@ label { display:block; margin-top:10px; font-size:16px; cursor:pointer; }
     <input type="datetime-local" id="horario" style="display:none">
 </div>
 
-<button onclick="calcularCorrida()">Calcular Corrida</button>
+<button id="calcBtn">Calcular Corrida</button>
 <div id="result"></div>
-<button id="confirmButton" style="display:none;" onclick="enviarTelegram()">✅ Confirmar e enviar</button>
+<button id="confirmButton" style="display:none;">✅ Confirmar e enviar</button>
 
 <script>
-// Certifica que a API do Maps foi carregada
+// Substitua com sua chave API
+const GOOGLE_MAPS_KEY = "SUA_CHAVE_AQUI";
+const BOT_TOKEN = "SEU_BOT_TOKEN";
+const CHAT_ID = "SEU_CHAT_ID";
+
+// Carregar Google Maps API dinamicamente
 function loadGoogleMaps(callback){
     if(typeof google==='object' && typeof google.maps==='object'){
         callback();
     } else {
         const script = document.createElement('script');
-        script.src = "https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE_AQUI";
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}`;
         script.onload = callback;
         document.head.appendChild(script);
     }
@@ -97,8 +102,6 @@ function calcularCorrida(){
 
 function enviarTelegram(){
     if(!lastRide) return;
-    const BOT_TOKEN="SEU_BOT_TOKEN";
-    const CHAT_ID="SEU_CHAT_ID";
     const text = `🚗 Nova Corrida!\nPonto de partida: ${lastRide.start}\nDestino: ${lastRide.end}\nTelefone: ${lastRide.phone}\nDistância: ${lastRide.km} km\nPreço: ${lastRide.price} €\nBagagens: ${lastRide.qntBag}\nHorário: ${lastRide.horario}\nCorrida urgente: ${lastRide.urgent}\nExtras:\n${lastRide.extras}`;
     fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
         method:'POST',
@@ -106,6 +109,7 @@ function enviarTelegram(){
         body:JSON.stringify({chat_id:CHAT_ID,text:text})
     }).then(()=>alert("Corrida enviada com sucesso!"));
 
+    // Reset
     document.getElementById('confirmButton').style.display='none';
     document.getElementById('partenza').value='';
     document.getElementById('arrivo').value='';
@@ -118,6 +122,10 @@ function enviarTelegram(){
     document.getElementById('result').innerText='';
     lastRide=null;
 }
+
+// Associar botões
+document.getElementById('calcBtn').addEventListener('click', calcularCorrida);
+document.getElementById('confirmButton').addEventListener('click', enviarTelegram);
 </script>
 
 </body>
