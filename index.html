@@ -1,123 +1,132 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>033Services - Corridas Torino</title>
+<title>033 Services - Calcolo Corsa</title>
 <style>
-body { background-color: #121212; color: #E0E0E0; font-family: Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-#app { background-color:#1E1E1E; padding:30px; border-radius:15px; width:90%; max-width:400px; text-align:center; box-shadow:0 0 20px rgba(128,0,255,0.5);}
-input, button { width:100%; padding:10px; margin:8px 0; border-radius:8px; border:none; font-size:16px; }
-input { background-color:#2A2A2A; color:#E0E0E0; }
-button { background-color:#8000FF; color:white; cursor:pointer; font-weight:bold; }
-button:hover { background-color:#A040FF; }
-#result { margin-top:15px; font-size:18px; font-weight:bold; white-space: pre-line; }
-#confirmBtn { display:none; margin-top:10px; }
-#bagageQty { display:none; margin-top:5px; }
+    body { font-family: Arial; padding: 20px; background: #111; color: #fff; }
+    input, button, select { padding: 8px; width: 100%; margin-top: 10px; }
+    .box { background: #222; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+    button { background: #e60000; color: #fff; border: none; cursor: pointer; font-size: 18px; }
 </style>
-</head>
-<body>
-<div id="app">
-    <h2>033Services - Corridas Torino</h2>
-    <input type="text" id="start" placeholder="Endereço de partida">
-    <input type="text" id="end" placeholder="Endereço de destino">
-    <input type="text" id="phone" placeholder="Telefone do cliente">
-    
-    <button id="bagageBtn" onclick="toggleBagage()">Tem bagagem?</button>
-    <input type="number" id="bagageQty" placeholder="Quantidade de bagagens" min="1">
-    
-    <input type="time" id="scheduledTime" placeholder="Agendar horário (opcional)">
-    
-    <label style="display:block; margin-top:10px; font-size:16px; text-align:left;">
-        <input type="checkbox" id="urgent"> Corrida urgente
-    </label>
-    
-    <button onclick="calculateRide()">Calcular Corrida</button>
-    <button id="confirmBtn" onclick="sendToTelegram()">Confirmar Corrida</button>
-    <div id="result"></div>
-</div>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w"></script>
 <script>
-const telegramBotToken = '8272710734:AAFniDEDva4daS0ZQs5AG0p7YABtNOaWj1w'; // seu token
-const telegramChatId = '8153703791'; // seu chat id
+async function calcolaCorsa() {
+    const partenza = document.getElementById("partenza").value;
+    const arrivo = document.getElementById("arrivo").value;
+    const telefono = document.getElementById("telefono").value;
 
-let lastRide = null;
+    const urgente = document.getElementById("urgente").checked;
+    const bagagem = document.getElementById("bagagem").checked;
+    const qntMalas = parseInt(document.getElementById("qntMalas").value || 0);
 
-function toggleBagage() {
-    const qtyInput = document.getElementById('bagageQty');
-    qtyInput.style.display = qtyInput.style.display === 'none' ? 'block' : 'none';
+    const agendado = document.getElementById("agendado").checked;
+    const horario = document.getElementById("horario").value;
+
+    if (!partenza || !arrivo || !telefono) {
+        alert("Preencha os campos obrigatórios!");
+        return;
+    }
+
+    let apiKey = "SUA_CHAVE_AQUI";
+
+    let url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(partenza)}&destinations=${encodeURIComponent(arrivo)}&key=${apiKey}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.rows[0].elements[0].distance) {
+        alert("Erro ao calcular distância.");
+        return;
+    }
+
+    const km = data.rows[0].elements[0].distance.value / 1000;
+
+    let preco = km * 1.75;
+    let extras = "";
+
+    if (urgente) { preco += 1; extras += "• Urgente +1€\n"; }
+
+    if (bagagem && qntMalas > 3) {
+        const adicionais = Math.floor((qntMalas - 3) / 2) * 2;
+        preco += adicionais;
+        extras += `• Bagagem extra (${qntMalas} malas) +${adicionais}€\n`;
+    }
+
+    if (agendado && horario) { preco += 1; extras += "• Agendado +1€\n"; }
+
+    preco = preco.toFixed(2);
+
+    document.getElementById("result").innerHTML = `
+        <b>Distanza:</b> ${km.toFixed(2)} km<br>
+        <b>Prezzo totale:</b> €${preco}<br>
+        <b>Extras:</b><br>${extras || "Nessuno"}
+    `;
+
+    document.getElementById("confirmButton").style.display = "block";
+
+    window.preparedMessage =
+       `🚕 *NOVA CORSA* 🚕\n\n` +
+       `📍 Partenza: ${partenza}\n` +
+       `🏁 Arrivo: ${arrivo}\n` +
+       `📞 Telefone: ${telefono}\n` +
+       `📏 Distanza: ${km.toFixed(2)} km\n` +
+       `💶 Prezzo: €${preco}\n` +
+       `${agendado ? "🕒 Agendada: " + horario + "\n" : ""}` +
+       `${extras ? "\nExtras:\n" + extras : ""}`;
 }
 
-function calculateRide() {
-    const start = document.getElementById('start').value.trim();
-    const end = document.getElementById('end').value.trim();
-    const phone = document.getElementById('phone').value.trim();
+async function enviarTelegram() {
+    const BOT_TOKEN = "SEU_BOT_TOKEN";
+    const CHAT_ID = "SEU_CHAT_ID";
 
-    if(!start || !end || !phone) { alert('Preencha partida, destino e telefone!'); return; }
+    if (!window.preparedMessage) {
+        alert("Calcola prima la corsa.");
+        return;
+    }
 
-    const service = new google.maps.DistanceMatrixService();
-    service.getDistanceMatrix({
-        origins: [start + ", Torino, Italia"],
-        destinations: [end + ", Torino, Italia"],
-        travelMode: 'DRIVING'
-    }, (response, status) => {
-        if(status !== 'OK') { alert('Erro ao calcular distância: ' + status); return; }
-        const element = response.rows[0].elements[0];
-        if(element.status !== 'OK') { alert('Endereço fora de Torino ou inválido!'); return; }
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
 
-        const distanceMeters = element.distance.value;
-        const distanceKm = Math.min(distanceMeters/1000, 15).toFixed(1);
-
-        // Preço base
-        let price = 5 + distanceKm * 1.75;
-
-        // Bagagens extras
-        const bagageQty = document.getElementById('bagageQty').style.display === 'block' ? 
-                          parseInt(document.getElementById('bagageQty').value) || 0 : 0;
-        if(bagageQty > 3) {
-            const extraBags = bagageQty - 3;
-            const extraCharge = Math.ceil(extraBags / 2) * 2;
-            price += extraCharge;
-        }
-
-        // Urgente
-        const urgent = document.getElementById('urgent').checked;
-        if(urgent) price += 1;
-
-        // Horário agendado
-        const scheduledTime = document.getElementById('scheduledTime').value || '';
-        if(scheduledTime) price += 1;
-
-        document.getElementById('result').innerText =
-            `Distância aproximada: ${distanceKm} km\nPreço total: ${price.toFixed(2)}\nBagagens: ${bagageQty}\nHorário agendado: ${scheduledTime || 'Não agendado'}\nCorrida urgente: ${urgent ? 'Sim' : 'Não'}`;
-
-        lastRide = {start, end, distanceKm, price: price.toFixed(2), phone, bagageQty, scheduledTime: scheduledTime || 'Não agendado', urgent: urgent ? 'Sim' : 'Não'};
-        document.getElementById('confirmBtn').style.display = 'block';
+    await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: CHAT_ID, text: window.preparedMessage, parse_mode: "Markdown" })
     });
-}
 
-function sendToTelegram() {
-    if(!lastRide) return;
-
-    const text = `🚗 Nova Corrida!\nPonto de partida: ${lastRide.start}\nDestino: ${lastRide.end}\nDistância: ${lastRide.distanceKm} km\nPreço: ${lastRide.price}\nTelefone: ${lastRide.phone}\nBagagens: ${lastRide.bagageQty}\nHorário agendado: ${lastRide.scheduledTime}\nCorrida urgente: ${lastRide.urgent}`;
-
-    const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage?chat_id=${telegramChatId}&text=` + encodeURIComponent(text);
-    const img = new Image();
-    img.src = url;
-
-    alert('Corrida enviada com sucesso!');
-    document.getElementById('confirmBtn').style.display = 'none';
-    document.getElementById('start').value = '';
-    document.getElementById('end').value = '';
-    document.getElementById('phone').value = '';
-    document.getElementById('bagageQty').value = '';
-    document.getElementById('bagageQty').style.display = 'none';
-    document.getElementById('scheduledTime').value = '';
-    document.getElementById('urgent').checked = false;
-    document.getElementById('result').innerText = '';
-    lastRide = null;
+    alert("Corsa inviata ✅");
 }
 </script>
+</head>
+<body>
+
+<h2>033 Services - Calcolo Corsa</h2>
+
+<div class="box">
+    <label>📍 Partenza</label>
+    <input type="text" id="partenza" placeholder="Indirizzo di partenza">
+    
+    <label>🏁 Destinazione</label>
+    <input type="text" id="arrivo" placeholder="Indirizzo di arrivo">
+
+    <label>📞 Telefono</label>
+    <input type="text" id="telefono" placeholder="Numero cliente">
+</div>
+
+<div class="box">
+    <label><input type="checkbox" id="urgente"> 🔥 Urgente (+1€)</label><br>
+    
+    <label><input type="checkbox" id="bagagem" onchange="document.getElementById('qntMalas').style.display = this.checked ? 'block' : 'none'"> 🧳 Bagagem</label>
+    <input type="number" id="qntMalas" placeholder="Quantidade de malas" style="display:none">
+
+    <label><input type="checkbox" id="agendado" onchange="document.getElementById('horario').style.display = this.checked ? 'block' : 'none'"> ⏰ Agendar corrida (+1€)</label>
+    <input type="datetime-local" id="horario" style="display:none">
+</div>
+
+<button onclick="calcolaCorsa()">Calcolare corsa</button>
+
+<div id="result" style="margin-top:15px;"></div>
+
+<button id="confirmButton" style="display:none; margin-top:20px;" onclick="enviarTelegram()">✅ Confermare e inviare</button>
+
 </body>
 </html>
