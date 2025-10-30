@@ -1,156 +1,119 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>033Services 🚗🏁</title>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>033Services Chat</title>
 <style>
-body{font-family:Arial;background:#0f0f12;color:white;margin:0;padding:20px;}
-h1{text-align:center;color:#b23eff;margin-bottom:20px;}
-.card{background:#16161d;padding:15px;border-radius:10px;margin-bottom:20px;}
-input,textarea,button{width:100%;padding:10px;border-radius:6px;border:none;margin-top:6px;font-size:15px}
-textarea{resize:none;height:70px;}
-button{background:#b23eff;color:white;font-weight:bold;cursor:pointer}
-button.secondary{background:#2e2e36}
-
-#chatBox{background:#111115;height:250px;overflow:auto;padding:10px;border-radius:8px;margin-top:10px}
-.msg-client{background:#303046;padding:8px;border-radius:8px;margin:5px 0;text-align:right;}
-.msg-driver{background:#2d392d;padding:8px;border-radius:8px;margin:5px 0;text-align:left;}
-.small{font-size:13px;color:#ccc;margin-top:5px}
+body {
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+#chat-container {
+  width: 100%;
+  max-width: 400px;
+  background: #222;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+#chat-box {
+  flex: 1;
+  background: #333;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  height: 400px;
+  overflow-y: auto;
+}
+.msg {
+  margin: 5px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+.client {
+  background: #5b2cff;
+  align-self: flex-end;
+}
+.driver {
+  background: #444;
+  align-self: flex-start;
+}
+#input-area {
+  display: flex;
+}
+#msg-input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  font-size: 16px;
+}
+#send-btn {
+  padding: 10px;
+  margin-left: 5px;
+  border-radius: 6px;
+  border: none;
+  background: #5b2cff;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
 </style>
 </head>
-
 <body>
-
-<h1>033Services 🚗🏁</h1>
-
-<div class="card">
-  <div class="small">Calcule a corrida no Norte da Itália</div>
-  <input id="start" placeholder="Partida" />
-  <input id="end" placeholder="Destino" />
-  <input id="phone" placeholder="Telefone" />
-
-  <button id="calcBtn">Calcular</button>
-  <button id="confirmBtn" class="secondary" style="display:none;">Confirmar Corrida</button>
-  <div id="result" class="small"></div>
+<div id="chat-container">
+  <div id="chat-box"></div>
+  <div id="input-area">
+    <input type="text" id="msg-input" placeholder="Digite sua mensagem...">
+    <button id="send-btn" onclick="sendMessage()">Enviar</button>
+  </div>
 </div>
 
-<div id="chatCard" class="card" style="display:none;">
-  <div class="small">Chat com o motorista após confirmar a corrida</div>
-  <div id="chatBox"></div>
-  <textarea id="chatInput" placeholder="Digite sua mensagem..."></textarea>
-  <button id="sendBtn">Enviar mensagem</button>
-</div>
-
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w"></script>
 <script>
-const BOT_TOKEN = "8272710734:AAFniDEDva4daS0ZQs5AG0p7YABtNOaWj1w";
-const DRIVER_CHAT = "8153703791"; // seu chat do telegram
+const chatBox = document.getElementById("chat-box");
+const TELEGRAM_BOT_TOKEN = "COLOQUE_AQUI_SEU_TOKEN";
+const TELEGRAM_CHAT_ID = "COLOQUE_AQUI_SEU_CHAT_ID";
 
-let sessionId = null;
-let lastRide = null;
-let telegramOffset = 0;
-
-// gera id de sessão
-function newSession(){ return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8); }
-
-// envia mensagem para o Telegram
-function sendToTelegram(text){
-  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({chat_id:DRIVER_CHAT, text})
-  });
+// Função para enviar mensagem para o bot
+function sendMessage() {
+  const msg = document.getElementById("msg-input").value.trim();
+  if(msg === "") return;
+  displayMessage(msg, "client");
+  
+  // envia mensagem para o Telegram Bot
+  fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent("[CLIENTE]: " + msg)}`)
+    .then(response => console.log("Mensagem enviada para Telegram"))
+    .catch(err => console.error("Erro ao enviar:", err));
+  
+  document.getElementById("msg-input").value = "";
 }
 
-// exibe no chat site
-function addMsg(author, text){
-  const box = document.getElementById("chatBox");
-  const msg = document.createElement("div");
-  msg.className = author==="client" ? "msg-client" : "msg-driver";
-  msg.textContent = text;
-  box.appendChild(msg);
-  box.scrollTop = box.scrollHeight;
+// Exibe mensagem no chat local
+function displayMessage(text, from) {
+  const div = document.createElement("div");
+  div.className = "msg " + from;
+  div.textContent = text;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// polling telegram para respostas
-async function pollTelegram(){
-  try{
-    const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${telegramOffset}`);
-    const data = await r.json();
-    if(!data.result) return setTimeout(pollTelegram,2000);
-
-    for(const upd of data.result){
-      telegramOffset = upd.update_id + 1;
-
-      const msg = upd.message;
-      if(!msg || !msg.text) continue;
-
-      // extrai sessionId da resposta
-      const match = msg.text.match(/RESPONSE\s+([0-9a-zA-Z\-]+)/i);
-      if(match){
-        const sid = match[1];
-        if(sid === sessionId){
-          const cleaned = msg.text.replace(/RESPONSE\s+[0-9a-zA-Z\-]+/i,"").trim();
-          addMsg("driver", cleaned);
-        }
-      }
-    }
-
-  }catch(e){}
-  setTimeout(pollTelegram,2000);
+// Opcional: simula recebimento de mensagens do motorista
+// (como placeholder, depois podemos integrar respostas reais do Telegram)
+function receiveMessage(text) {
+  displayMessage(text, "driver");
 }
-pollTelegram();
 
-// Cálculo
-document.getElementById("calcBtn").onclick = ()=>{
-  const s = document.getElementById("start").value;
-  const e = document.getElementById("end").value;
-  const p = document.getElementById("phone").value;
-  if(!s || !e || !p) return alert("Preencha todos os campos.");
-
-  const service = new google.maps.DistanceMatrixService();
-  service.getDistanceMatrix({
-    origins:[s+", Italia Settentrionale"],
-    destinations:[e+", Italia Settentrionale"],
-    travelMode:"DRIVING",
-    region:"it"
-  },(resp,st)=>{
-    if(st!=="OK") return alert("Erro: "+st);
-    const el = resp.rows[0].elements[0];
-    if(el.status!=="OK") return alert("Endereço inválido");
-
-    const km = el.distance.value/1000;
-    const price = (5 + km*1.75).toFixed(2);
-
-    lastRide = {s,e,p,km,price};
-    document.getElementById("result").innerText = `Distância: ${km.toFixed(2)} km | Total: €${price}`;
-    document.getElementById("confirmBtn").style.display = "block";
-  });
-};
-
-// Confirmar corrida
-document.getElementById("confirmBtn").onclick = ()=>{
-  sessionId = newSession();
-  document.getElementById("chatCard").style.display = "block";
-  addMsg("client","Corrida confirmada. Chat aberto.");
-
-  sendToTelegram(
-    `🚗 NOVA CORRIDA\nSessionId: ${sessionId}\nPartida: ${lastRide.s}\nDestino: ${lastRide.e}\nTel: ${lastRide.p}\nPreço: €${lastRide.price}\n\nResponder usando:\nRESPONSE ${sessionId} sua mensagem aqui`
-  );
-};
-
-// Enviar mensagem do cliente
-document.getElementById("sendBtn").onclick = ()=>{
-  if(!sessionId) return;
-  const txt = document.getElementById("chatInput").value.trim();
-  if(!txt) return;
-
-  addMsg("client", txt);
-  sendToTelegram(`CLIENTE ${sessionId}:\n${txt}`);
-  document.getElementById("chatInput").value="";
-};
+// Teste de mensagem automática do motorista
+// setTimeout(() => receiveMessage("Olá! Recebi sua mensagem."), 3000);
 </script>
 </body>
 </html>
