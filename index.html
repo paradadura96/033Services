@@ -13,6 +13,7 @@ label { margin-top: 10px; display: block; }
 #result { margin-top: 15px; font-size: 18px; }
 .language-buttons { display: flex; justify-content: space-around; margin-bottom: 10px; }
 .language-buttons button { width: 20%; background: #5b2cff; font-size: 20px; padding: 8px; }
+#confirm-btn { display:none; margin-top:10px; }
 </style>
 </head>
 <body>
@@ -27,10 +28,10 @@ label { margin-top: 10px; display: block; }
 </div>
 
 <label id="label-start">Ponto de partida:</label>
-<input type="text" id="start" placeholder="Ex: Via Roma 10">
+<input type="text" id="start" placeholder="Ex: Via Roma 10, Torino">
 
 <label id="label-end">Destino:</label>
-<input type="text" id="end" placeholder="Ex: Piazza Castello">
+<input type="text" id="end" placeholder="Ex: Piazza Castello, Torino">
 
 <label id="label-phone">Telefone do cliente:</label>
 <input type="text" id="phone" placeholder="Ex: +39 3519117500">
@@ -54,63 +55,30 @@ label { margin-top: 10px; display: block; }
   <option value="1">Sim</option>
 </select>
 
-<button onclick="calculateAndSend()" id="calculate-btn">Calcular Corrida</button>
+<button onclick="calculateRide()" id="calculate-btn">Calcular Corrida</button>
+<button onclick="confirmRide()" id="confirm-btn">Confirmar Corrida</button>
 
 <p id="result"></p>
 </div>
 
 <script>
-const BOT_TOKEN = "COLOQUE_SEU_TOKEN_AQUI";
-const CHAT_ID = "COLOQUE_SEU_CHAT_ID_AQUI";
+const BOT_TOKEN = "8272710734:AAFniDEDva4daS0ZQs5AG0p7YABtNOaWj1w";
+const CHAT_ID = "8153703791";
+const GOOGLE_API_KEY = "AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w";
 
 const translations = {
-  pt: {
-    start:"Ponto de partida:",
-    end:"Destino:",
-    phone:"Telefone do cliente:",
-    baggage:"Bagagem:",
-    time:"Agendar horário (opcional):",
-    urgent:"Urgente?",
-    calculate:"Calcular Corrida",
-    price:"Preço total:",
-    alert:"Preencha ponto de partida, destino e telefone."
-  },
-  it: {
-    start:"Partenza:",
-    end:"Destinazione:",
-    phone:"Telefono cliente:",
-    baggage:"Bagaglio:",
-    time:"Orario opzionale:",
-    urgent:"Urgente?",
-    calculate:"Calcola Corsa",
-    price:"Prezzo totale:",
-    alert:"Inserisci partenza, destinazione e telefono."
-  },
-  es: {
-    start:"Punto de partida:",
-    end:"Destino:",
-    phone:"Teléfono del cliente:",
-    baggage:"Equipaje:",
-    time:"Horario opcional:",
-    urgent:"¿Urgente?",
-    calculate:"Calcular Carrera",
-    price:"Precio total:",
-    alert:"Complete punto de partida, destino y teléfono."
-  },
-  en: {
-    start:"Start:",
-    end:"Destination:",
-    phone:"Customer phone:",
-    baggage:"Luggage:",
-    time:"Optional time:",
-    urgent:"Urgent?",
-    calculate:"Calculate Ride",
-    price:"Total price:",
-    alert:"Fill start, destination and phone."
-  }
+  pt: {start:"Ponto de partida:",end:"Destino:",phone:"Telefone do cliente:",baggage:"Bagagem:",time:"Agendar horário (opcional):",urgent:"Urgente?",calculate:"Calcular Corrida",confirm:"Confirmar Corrida",price:"Preço total:",alert:"Preencha ponto de partida, destino e telefone.",success:"Corrida confirmada!"},
+  it: {start:"Partenza:",end:"Destinazione:",phone:"Telefono cliente:",baggage:"Bagaglio:",time:"Orario opzionale:",urgent:"Urgente?",calculate:"Calcola Corsa",confirm:"Conferma Corsa",price:"Prezzo totale:",alert:"Inserisci partenza, destinazione e telefono.",success:"Corsa confermata!"},
+  es: {start:"Punto de partida:",end:"Destino:",phone:"Teléfono del cliente:",baggage:"Equipaje:",time:"Horario opcional:",urgent:"¿Urgente?",calculate:"Calcular Carrera",confirm:"Confirmar Carrera",price:"Precio total:",alert:"Complete punto de partida, destino y teléfono.",success:"¡Carrera confirmada!"},
+  en: {start:"Start:",end:"Destination:",phone:"Customer phone:",baggage:"Luggage:",time:"Optional time:",urgent:"Urgent?",calculate:"Calculate Ride",confirm:"Confirm Ride",price:"Total price:",alert:"Fill start, destination and phone.",success:"Ride confirmed!"}
 };
 
+let currentLang = 'pt';
+let currentPrice = 0;
+let currentMessage = "";
+
 function setLanguage(lang){
+  currentLang = lang;
   document.getElementById('label-start').innerText = translations[lang].start;
   document.getElementById('label-end').innerText = translations[lang].end;
   document.getElementById('label-phone').innerText = translations[lang].phone;
@@ -118,9 +86,10 @@ function setLanguage(lang){
   document.getElementById('label-time').innerText = translations[lang].time;
   document.getElementById('label-urgent').innerText = translations[lang].urgent;
   document.getElementById('calculate-btn').innerText = translations[lang].calculate;
+  document.getElementById('confirm-btn').innerText = translations[lang].confirm;
 }
 
-function calculateAndSend(){
+function calculateRide(){
   const start = document.getElementById("start").value.trim();
   const end = document.getElementById("end").value.trim();
   const phone = document.getElementById("phone").value.trim();
@@ -128,31 +97,35 @@ function calculateAndSend(){
   const time = document.getElementById("time").value;
   const urgent = parseInt(document.getElementById("urgent").value);
 
-  if(!start || !end || !phone){
-    alert(translations['pt'].alert);
-    return;
-  }
+  if(!start || !end || !phone){ alert(translations[currentLang].alert); return; }
 
-  // DISTÂNCIA FIXA SIMPLIFICADA (para testar)
-  let distanceKm = 5;
-  if(start.toLowerCase().includes("torino") && end.toLowerCase().includes("torino")) distanceKm = 5;
-  else if(start.toLowerCase().includes("milano") || end.toLowerCase().includes("milano")) distanceKm = 15;
-  else distanceKm = 10;
+  // DISTANCE MATRIX API via fetch + proxy para CORS
+  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(start)}&destinations=${encodeURIComponent(end)}&key=${GOOGLE_API_KEY}&units=metric`;
 
-  let price = 5 + distanceKm*1.75; // deslocamento + km
+  fetch(`https://cors-anywhere.herokuapp.com/${url}`)
+  .then(res => res.json())
+  .then(data => {
+    if(data.rows && data.rows[0].elements[0].status === "OK"){
+      const distanceKm = data.rows[0].elements[0].distance.value / 1000; // metros -> km
+      let price = 5 + distanceKm*1.75;
+      if(baggage>3) price += Math.ceil((baggage-3)/2)*2;
+      if(urgent) price +=1;
+      if(time) price +=1;
+      currentPrice = price;
 
-  // Bagagem extra
-  if(baggage > 3) price += Math.ceil((baggage-3)/2)*2;
-  if(urgent) price +=1;
-  if(time) price +=1;
+      currentMessage = `🚗 Nova Corrida!\nPonto de partida: ${start}\nDestino: ${end}\nTelefone: ${phone}\nBagagem: ${baggage}\nHorário: ${time || "Não agendado"}\nUrgente: ${urgent ? "Sim":"Não"}\nPreço: ${price.toFixed(2)}`;
+      document.getElementById("result").innerText = `${translations[currentLang].price} ${price.toFixed(2)}`;
+      document.getElementById("confirm-btn").style.display = "block";
+    } else { alert("Erro ao calcular a distância."); }
+  })
+  .catch(err => alert("Erro na API: "+err));
+}
 
-  document.getElementById("result").innerText = `${translations['pt'].price} ${price.toFixed(2)}`;
-
-  const message = `🚗 Nova Corrida!\nPonto de partida: ${start}\nDestino: ${end}\nTelefone: ${phone}\nBagagem: ${baggage}\nHorário: ${time || "Não agendado"}\nUrgente: ${urgent ? "Sim":"Não"}\nPreço: ${price.toFixed(2)}`;
-
-  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(message)}`)
-    .then(() => console.log("Mensagem enviada"))
-    .catch(err => console.error("Erro ao enviar:", err));
+function confirmRide(){
+  if(!currentMessage){ alert("Calcule a corrida antes de confirmar."); return; }
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(currentMessage)}`)
+    .then(() => alert(translations[currentLang].success))
+    .catch(err => alert("Erro ao enviar mensagem: "+err));
 }
 </script>
 </body>
