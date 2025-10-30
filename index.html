@@ -66,15 +66,11 @@
 </div>
 
 <script>
-// CHIAVE API GOOGLE (coloca a sua)
+// ======== CONFIG ========
 const apiKey = "SUA_GOOGLE_API_KEY";
-
-// TELEGRAM
 const botToken = "SEU_BOT_TOKEN";
 const chatId = "SEU_CHAT_ID";
-
-// PREZZO
-const prezzo_km = 1.2; 
+const prezzo_km = 1.2; // preço por km
 
 function calcola() {
     const start = document.getElementById("start").value;
@@ -85,18 +81,18 @@ function calcola() {
         return;
     }
 
-    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(start)}&destination=${encodeURIComponent(end)}&region=it&key=${apiKey}`;
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(start)}&destinations=${encodeURIComponent(end)}&region=it&language=it&units=metric&key=${apiKey}`;
 
-    fetch("https://cors-anywhere.herokuapp.com/" + url) // evita bloqueio CORS
-    .then(res => res.json())
+    fetch(url)
+    .then(r => r.json())
     .then(data => {
-        if (!data.routes || data.routes.length === 0) {
+        if (!data.rows || !data.rows[0].elements || data.rows[0].elements[0].status !== "OK") {
             document.getElementById("result").innerHTML = "Percorso non trovato.";
             return;
         }
 
-        const distanza_m = data.routes[0].legs[0].distance.value;
-        const tempo_s = data.routes[0].legs[0].duration.value;
+        const distanza_m = data.rows[0].elements[0].distance.value;
+        const tempo_s = data.rows[0].elements[0].duration.value;
 
         const km = (distanza_m / 1000).toFixed(1);
         const minuti = Math.round(tempo_s / 60);
@@ -109,9 +105,19 @@ function calcola() {
             ✅ Ti risponderò subito nel messaggio!
         `;
 
-        // manda para Telegram
-        const messaggio = `📍 NUOVA CORSA\n\nPartenza: ${start}\nArrivo: ${end}\nDistanza: ${km} km\nTempo: ${minuti} min\nPrezzo: €${prezzo}`;
-        fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(messaggio)}`);
+        const msg = `
+📍 NUOVA CORSA
+Partenza: ${start}
+Arrivo: ${end}
+Distanza: ${km} km
+Tempo: ${minuti} min
+Prezzo: €${prezzo}
+        `;
+
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(msg)}`);
+    })
+    .catch(() => {
+        document.getElementById("result").innerHTML = "Errore nel calcolo.";
     });
 }
 </script>
