@@ -28,6 +28,10 @@ button:hover { background-color:#A040FF; }
     
     <input type="time" id="scheduledTime" placeholder="Agendar horário (opcional)">
     
+    <label style="display:block; margin-top:10px; font-size:16px; text-align:left;">
+        <input type="checkbox" id="urgent"> Corrida urgente
+    </label>
+    
     <button onclick="calculateRide()">Calcular Corrida</button>
     <button id="confirmBtn" onclick="sendToTelegram()">Confirmar Corrida</button>
     <div id="result"></div>
@@ -69,11 +73,12 @@ function calculateRide() {
         const bagageQty = document.getElementById('bagageQty').style.display === 'block' ? 
                           document.getElementById('bagageQty').value : '0';
         const scheduledTime = document.getElementById('scheduledTime').value || 'Não agendado';
+        const urgent = document.getElementById('urgent').checked ? 'Sim' : 'Não';
 
         document.getElementById('result').innerText =
-            `Distância aproximada: ${distanceKm} km\nPreço total: ${price}\nBagagens: ${bagageQty}\nHorário agendado: ${scheduledTime}`;
+            `Distância aproximada: ${distanceKm} km\nPreço total: ${price}\nBagagens: ${bagageQty}\nHorário agendado: ${scheduledTime}\nCorrida urgente: ${urgent}`;
 
-        lastRide = {start, end, distanceKm, price, phone, bagageQty, scheduledTime};
+        lastRide = {start, end, distanceKm, price, phone, bagageQty, scheduledTime, urgent};
         document.getElementById('confirmBtn').style.display = 'block';
     });
 }
@@ -81,7 +86,7 @@ function calculateRide() {
 function sendToTelegram() {
     if(!lastRide) return;
 
-    const text = `🚗 Nova Corrida!\nPonto de partida: ${lastRide.start}\nDestino: ${lastRide.end}\nDistância: ${lastRide.distanceKm} km\nPreço: ${lastRide.price}\nTelefone: ${lastRide.phone}\nBagagens: ${lastRide.bagageQty}\nHorário agendado: ${lastRide.scheduledTime}`;
+    const text = `🚗 Nova Corrida!\nPonto de partida: ${lastRide.start}\nDestino: ${lastRide.end}\nDistância: ${lastRide.distanceKm} km\nPreço: ${lastRide.price}\nTelefone: ${lastRide.phone}\nBagagens: ${lastRide.bagageQty}\nHorário agendado: ${lastRide.scheduledTime}\nCorrida urgente: ${lastRide.urgent}`;
 
     const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage?chat_id=${telegramChatId}&text=` + encodeURIComponent(text);
     const img = new Image();
@@ -95,6 +100,7 @@ function sendToTelegram() {
     document.getElementById('bagageQty').value = '';
     document.getElementById('bagageQty').style.display = 'none';
     document.getElementById('scheduledTime').value = '';
+    document.getElementById('urgent').checked = false;
     document.getElementById('result').innerText = '';
     lastRide = null;
 }
