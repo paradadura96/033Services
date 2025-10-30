@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>033Services - Corridas Torino</title>
 <style>
-body { background-color: #121212; color: #E0E0E0; font-family: Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-#app { background-color:#1E1E1E; padding:30px; border-radius:15px; width:90%; max-width:400px; text-align:center; box-shadow:0 0 20px rgba(128,0,255,0.5);}
-input, button { width:100%; padding:10px; margin:8px 0; border-radius:8px; border:none; font-size:16px; }
-input { background-color:#2A2A2A; color:#E0E0E0; }
-button { background-color:#8000FF; color:white; cursor:pointer; font-weight:bold; }
-button:hover { background-color:#A040FF; }
-#result { margin-top:15px; font-size:18px; font-weight:bold; white-space: pre-line; }
-#confirmBtn { display:none; margin-top:10px; }
+    body { background-color: #121212; color: #E0E0E0; font-family: Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+    #app { background-color:#1E1E1E; padding:30px; border-radius:15px; width:90%; max-width:400px; text-align:center; box-shadow:0 0 20px rgba(128,0,255,0.5);}
+    input, button { width:100%; padding:10px; margin:8px 0; border-radius:8px; border:none; font-size:16px; }
+    input { background-color:#2A2A2A; color:#E0E0E0; }
+    button { background-color:#8000FF; color:white; cursor:pointer; font-weight:bold; }
+    button:hover { background-color:#A040FF; }
+    #map { margin-top:20px; height:200px; width:100%; border-radius:10px; }
+    #result { margin-top:15px; font-size:18px; font-weight:bold; white-space: pre-line; }
 </style>
 </head>
 <body>
@@ -21,16 +21,14 @@ button:hover { background-color:#A040FF; }
     <input type="text" id="start" placeholder="Endereço de partida">
     <input type="text" id="end" placeholder="Endereço de destino">
     <button onclick="calculateRide()">Calcular Corrida</button>
-    <button id="confirmBtn" onclick="sendToTelegram()">Confirmar Corrida</button>
     <div id="result"></div>
+    <div id="map"></div>
 </div>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w&libraries=places"></script>
 <script>
 const telegramBotToken = '8272710734:AAFniDEDva4daS0ZQs5AG0p7YABtNOaWj1w'; // seu token
-const telegramChatId = '8153703791'; // seu chat id
-
-let lastRide = null;
+const telegramChatId = '8153703791'; // seu chat ID
 
 function calculateRide() {
     const start = document.getElementById('start').value.trim();
@@ -54,25 +52,28 @@ function calculateRide() {
         document.getElementById('result').innerText =
             `Distância aproximada: ${distanceKm} km\nPreço total: ${price}`;
 
-        lastRide = {start, end, distanceKm, price};
-        document.getElementById('confirmBtn').style.display = 'block';
+        // Mostrar mapa
+        const map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 12,
+            center: {lat: 45.07, lng: 7.69}
+        });
+        const directionsService = new google.maps.DirectionsService();
+        const directionsRenderer = new google.maps.DirectionsRenderer();
+        directionsRenderer.setMap(map);
+        directionsService.route({
+            origin: start + ", Torino, Italia",
+            destination: end + ", Torino, Italia",
+            travelMode: 'DRIVING'
+        }, (result, status) => {
+            if(status === 'OK') directionsRenderer.setDirections(result);
+        });
+
+        // Enviar para Telegram usando GET via tag <img> para evitar CORS
+        const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage?chat_id=${telegramChatId}&text=` +
+                    encodeURIComponent(`🚗 Nova Corrida!\nPonto de partida: ${start}\nDestino: ${end}\nDistância: ${distanceKm} km\nPreço: ${price}`);
+        const img = new Image();
+        img.src = url; // faz a requisição sem bloquear por CORS
     });
-}
-
-function sendToTelegram() {
-    if(!lastRide) return;
-    const text = `🚗 Nova Corrida!\nPonto de partida: ${lastRide.start}\nDestino: ${lastRide.end}\nDistância: ${lastRide.distanceKm} km\nPreço: ${lastRide.price}`;
-
-    const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage?chat_id=${telegramChatId}&text=` + encodeURIComponent(text);
-    const img = new Image();
-    img.src = url;
-
-    alert('Corrida enviada com sucesso!');
-    document.getElementById('confirmBtn').style.display = 'none';
-    document.getElementById('start').value = '';
-    document.getElementById('end').value = '';
-    document.getElementById('result').innerText = '';
-    lastRide = null;
 }
 </script>
 </body>
