@@ -64,7 +64,6 @@ label { margin-top: 10px; display: block; }
 <script>
 const BOT_TOKEN = "8272710734:AAFniDEDva4daS0ZQs5AG0p7YABtNOaWj1w";
 const CHAT_ID = "8153703791";
-const GOOGLE_API_KEY = "AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w";
 
 const translations = {
   pt: {start:"Ponto de partida:",end:"Destino:",phone:"Telefone do cliente:",baggage:"Bagagem:",time:"Agendar horário (opcional):",urgent:"Urgente?",calculate:"Calcular Corrida",confirm:"Confirmar Corrida",price:"Preço total:",alert:"Preencha ponto de partida, destino e telefone.",success:"Corrida confirmada!"},
@@ -89,6 +88,11 @@ function setLanguage(lang){
   document.getElementById('confirm-btn').innerText = translations[lang].confirm;
 }
 
+let mapService;
+function initMap() {
+  mapService = new google.maps.DistanceMatrixService();
+}
+
 function calculateRide(){
   const start = document.getElementById("start").value.trim();
   const end = document.getElementById("end").value.trim();
@@ -99,14 +103,14 @@ function calculateRide(){
 
   if(!start || !end || !phone){ alert(translations[currentLang].alert); return; }
 
-  // DISTANCE MATRIX API via fetch + proxy para CORS
-  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(start)}&destinations=${encodeURIComponent(end)}&key=${GOOGLE_API_KEY}&units=metric`;
-
-  fetch(`https://cors-anywhere.herokuapp.com/${url}`)
-  .then(res => res.json())
-  .then(data => {
-    if(data.rows && data.rows[0].elements[0].status === "OK"){
-      const distanceKm = data.rows[0].elements[0].distance.value / 1000; // metros -> km
+  mapService.getDistanceMatrix({
+    origins: [start],
+    destinations: [end],
+    travelMode: 'DRIVING',
+    unitSystem: google.maps.UnitSystem.METRIC,
+  }, (response, status) => {
+    if(status === 'OK'){
+      const distanceKm = response.rows[0].elements[0].distance.value / 1000;
       let price = 5 + distanceKm*1.75;
       if(baggage>3) price += Math.ceil((baggage-3)/2)*2;
       if(urgent) price +=1;
@@ -117,8 +121,7 @@ function calculateRide(){
       document.getElementById("result").innerText = `${translations[currentLang].price} ${price.toFixed(2)}`;
       document.getElementById("confirm-btn").style.display = "block";
     } else { alert("Erro ao calcular a distância."); }
-  })
-  .catch(err => alert("Erro na API: "+err));
+  });
 }
 
 function confirmRide(){
@@ -128,5 +131,6 @@ function confirmRide(){
     .catch(err => alert("Erro ao enviar mensagem: "+err));
 }
 </script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w&callback=initMap"></script>
 </body>
 </html>
