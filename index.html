@@ -5,18 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>033Services 🚗🏁</title>
 <style>
-body { font-family: Arial, sans-serif; background:#111; color:#fff; margin:0; padding:15px;}
+body { font-family: Arial, sans-serif; background:#111; color:#fff; padding:15px;}
 h2 { color:#B23EFF; text-align:center; margin-bottom:20px; }
-.box { background:#222; padding:20px; border-radius:12px; margin-bottom:15px; }
+.box { background:#222; padding:20px; border-radius:12px; margin-bottom:15px;}
 input, button { width:100%; padding:12px; margin:8px 0; border-radius:8px; border:none; font-size:16px; }
 input { background:#1E1E2E; color:#fff; }
 button { background:#B23EFF; color:#fff; font-weight:bold; cursor:pointer; transition:0.3s; }
 button:hover { background:#9B1DE5; }
 label { display:block; margin-top:10px; font-size:16px; cursor:pointer; }
 #result { margin-top:15px; white-space: pre-line; font-size:16px; background:#1a1a2e; padding:10px; border-radius:8px; }
-@media(max-width:600px){ input, button{font-size:18px; padding:14px;} #result{font-size:18px;} }
 </style>
-<script src="https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE_AQUI"></script>
 </head>
 <body>
 
@@ -41,45 +39,59 @@ label { display:block; margin-top:10px; font-size:16px; cursor:pointer; }
 <button id="confirmButton" style="display:none;" onclick="enviarTelegram()">✅ Confirmar e enviar</button>
 
 <script>
+// Certifica que a API do Maps foi carregada
+function loadGoogleMaps(callback){
+    if(typeof google==='object' && typeof google.maps==='object'){
+        callback();
+    } else {
+        const script = document.createElement('script');
+        script.src = "https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE_AQUI";
+        script.onload = callback;
+        document.head.appendChild(script);
+    }
+}
+
 let lastRide = null;
 
 function calcularCorrida(){
-    const start = document.getElementById('partenza').value.trim();
-    const end = document.getElementById('arrivo').value.trim();
-    const phone = document.getElementById('telefone').value.trim();
-    const urgent = document.getElementById('urgente').checked;
-    const bag = document.getElementById('bagagem').checked;
-    const qntBag = parseInt(document.getElementById('qntMalas').value) || 0;
-    const agendado = document.getElementById('agendado').checked;
-    const horario = document.getElementById('horario').value;
+    loadGoogleMaps(() => {
+        const start = document.getElementById('partenza').value.trim();
+        const end = document.getElementById('arrivo').value.trim();
+        const phone = document.getElementById('telefone').value.trim();
+        const urgent = document.getElementById('urgente').checked;
+        const bag = document.getElementById('bagagem').checked;
+        const qntBag = parseInt(document.getElementById('qntMalas').value) || 0;
+        const agendado = document.getElementById('agendado').checked;
+        const horario = document.getElementById('horario').value;
 
-    if(!start || !end || !phone){ alert("Preencha partida, destino e telefone!"); return; }
+        if(!start || !end || !phone){ alert("Preencha partida, destino e telefone!"); return; }
 
-    const service = new google.maps.DistanceMatrixService();
-    service.getDistanceMatrix({
-        origins:[start + ", Torino, Italia"],
-        destinations:[end + ", Torino, Italia"],
-        travelMode:'DRIVING'
-    }, (response, status)=>{
-        if(status!=="OK"){ alert("Erro ao calcular distância: "+status); return; }
-        const elem = response.rows[0].elements[0];
-        if(elem.status!=="OK"){ alert("Endereço inválido ou fora de Torino!"); return; }
+        const service = new google.maps.DistanceMatrixService();
+        service.getDistanceMatrix({
+            origins:[start + ", Torino, Italia"],
+            destinations:[end + ", Torino, Italia"],
+            travelMode:'DRIVING'
+        }, (response, status)=>{
+            if(status!=="OK"){ alert("Erro ao calcular distância: "+status); return; }
+            const elem = response.rows[0].elements[0];
+            if(elem.status!=="OK"){ alert("Endereço inválido ou fora de Torino!"); return; }
 
-        const km = elem.distance.value/1000;
-        let price = 5 + km*1.75;
-        let extras = "";
+            const km = elem.distance.value/1000;
+            let price = 5 + km*1.75;
+            let extras = "";
 
-        if(urgent){ price+=1; extras+="• Corrida urgente +1€\n"; }
-        if(bag && qntBag>3){ let extraBag = Math.ceil((qntBag-3)/2)*2; price+=extraBag; extras+=`• Bagagem (${qntBag} malas) +${extraBag}€\n`; }
-        if(agendado && horario){ price+=1; extras+="• Agendamento +1€\n"; }
+            if(urgent){ price+=1; extras+="• Corrida urgente +1€\n"; }
+            if(bag && qntBag>3){ let extraBag = Math.ceil((qntBag-3)/2)*2; price+=extraBag; extras+=`• Bagagem (${qntBag} malas) +${extraBag}€\n`; }
+            if(agendado && horario){ price+=1; extras+="• Agendamento +1€\n"; }
 
-        price = price.toFixed(2);
+            price = price.toFixed(2);
 
-        document.getElementById('result').innerText = 
-            `Distância: ${km.toFixed(2)} km\nPreço total: ${price} €\nExtras:\n${extras||'Nenhum'}`;
-        document.getElementById('confirmButton').style.display='block';
+            document.getElementById('result').innerText = 
+                `Distância: ${km.toFixed(2)} km\nPreço total: ${price} €\nExtras:\n${extras||'Nenhum'}`;
+            document.getElementById('confirmButton').style.display='block';
 
-        lastRide = {start,end,phone,km:km.toFixed(2),price,extras,horario:agendado?horario:'Não agendado',urgent:urgent?'Sim':'Não',qntBag};
+            lastRide = {start,end,phone,km:km.toFixed(2),price,extras,horario:agendado?horario:'Não agendado',urgent:urgent?'Sim':'Não',qntBag};
+        });
     });
 }
 
@@ -107,5 +119,6 @@ function enviarTelegram(){
     lastRide=null;
 }
 </script>
+
 </body>
 </html>
