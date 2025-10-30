@@ -11,7 +11,6 @@ input, button { width:100%; padding:10px; margin:8px 0; border-radius:8px; borde
 input { background-color:#2A2A2A; color:#E0E0E0; }
 button { background-color:#8000FF; color:white; cursor:pointer; font-weight:bold; }
 button:hover { background-color:#A040FF; }
-#map { margin-top:20px; height:200px; width:100%; border-radius:10px; }
 #result { margin-top:15px; font-size:18px; font-weight:bold; white-space: pre-line; }
 #confirmBtn { display:none; margin-top:10px; }
 </style>
@@ -24,13 +23,12 @@ button:hover { background-color:#A040FF; }
     <button onclick="calculateRide()">Calcular Corrida</button>
     <button id="confirmBtn" onclick="sendToTelegram()">Confirmar Corrida</button>
     <div id="result"></div>
-    <div id="map"></div>
 </div>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w&libraries=places"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w"></script>
 <script>
-const telegramBotToken = '8272710734:AAFniDEDva4daS0ZQs5AG0p7YABtNOaWj1w'; // substitua pelo seu token
-const telegramChatId = '8153703791'; // substitua pelo seu chat id
+const telegramBotToken = '8272710734:AAFniDEDva4daS0ZQs5AG0p7YABtNOaWj1w'; // seu token
+const telegramChatId = '8153703791'; // seu chat id
 
 let lastRide = null;
 
@@ -54,34 +52,17 @@ function calculateRide() {
         const price = (5 + distanceKm * 1.5).toFixed(2);
 
         document.getElementById('result').innerText =
-            `Distância aproximada: ${distanceKm} km\nPreço total: ${price} €`;
+            `Distância aproximada: ${distanceKm} km\nPreço total: ${price}`;
 
         lastRide = {start, end, distanceKm, price};
         document.getElementById('confirmBtn').style.display = 'block';
-
-        // Mostrar mapa
-        const map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 12,
-            center: {lat: 45.07, lng: 7.69}
-        });
-        const directionsService = new google.maps.DirectionsService();
-        const directionsRenderer = new google.maps.DirectionsRenderer();
-        directionsRenderer.setMap(map);
-        directionsService.route({
-            origin: start + ", Torino, Italia",
-            destination: end + ", Torino, Italia",
-            travelMode: 'DRIVING'
-        }, (result, status) => {
-            if(status === 'OK') directionsRenderer.setDirections(result);
-        });
     });
 }
 
 function sendToTelegram() {
     if(!lastRide) return;
-    const text = `🚗 Nova Corrida!\nPonto de partida: ${lastRide.start}\nDestino: ${lastRide.end}\nDistância: ${lastRide.distanceKm} km\nPreço: ${lastRide.price} €`;
+    const text = `🚗 Nova Corrida!\nPonto de partida: ${lastRide.start}\nDestino: ${lastRide.end}\nDistância: ${lastRide.distanceKm} km\nPreço: ${lastRide.price}`;
 
-    // Envia via GET com <img> para evitar bloqueio CORS
     const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage?chat_id=${telegramChatId}&text=` + encodeURIComponent(text);
     const img = new Image();
     img.src = url;
@@ -91,7 +72,6 @@ function sendToTelegram() {
     document.getElementById('start').value = '';
     document.getElementById('end').value = '';
     document.getElementById('result').innerText = '';
-    document.getElementById('map').innerHTML = '';
     lastRide = null;
 }
 </script>
