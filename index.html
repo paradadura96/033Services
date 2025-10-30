@@ -37,14 +37,7 @@ label { margin-top: 10px; display: block; }
 <input type="text" id="phone" placeholder="+39 345 678 9012">
 
 <label id="label-baggage">Bagagem:</label>
-<select id="baggage">
-  <option value="0">Sem bagagem</option>
-  <option value="1">1 mala</option>
-  <option value="2">2 malas</option>
-  <option value="3">3 malas</option>
-  <option value="4">4 malas</option>
-  <option value="5">5 malas</option>
-</select>
+<select id="baggage"></select>
 
 <label id="label-time">Agendar horário (opcional):</label>
 <input type="time" id="time">
@@ -66,10 +59,10 @@ const BOT_TOKEN = "8272710734:AAFniDEDva4daS0ZQs5AG0p7YABtNOaWj1w";
 const CHAT_ID = "8153703791";
 
 const translations = {
-  pt: {start:"Ponto de partida:",end:"Destino:",phone:"Telefone do cliente:",baggage:"Bagagem:",time:"Agendar horário (opcional):",urgent:"Urgente?",calculate:"Calcular Corrida",confirm:"Confirmar Corrida",price:"Preço total:",alert:"Preencha ponto de partida, destino e telefone.",success:"Corrida confirmada!"},
-  it: {start:"Partenza:",end:"Destinazione:",phone:"Telefono cliente:",baggage:"Bagaglio:",time:"Orario opzionale:",urgent:"Urgente?",calculate:"Calcola Corsa",confirm:"Conferma Corsa",price:"Prezzo totale:",alert:"Inserisci partenza, destinazione e telefono.",success:"Corsa confermata!"},
-  es: {start:"Punto de partida:",end:"Destino:",phone:"Teléfono del cliente:",baggage:"Equipaje:",time:"Horario opcional:",urgent:"¿Urgente?",calculate:"Calcular Carrera",confirm:"Confirmar Carrera",price:"Precio total:",alert:"Complete punto de partida, destino y teléfono.",success:"¡Carrera confirmada!"},
-  en: {start:"Start:",end:"Destination:",phone:"Customer phone:",baggage:"Luggage:",time:"Optional time:",urgent:"Urgent?",calculate:"Calculate Ride",confirm:"Confirm Ride",price:"Total price:",alert:"Fill start, destination and phone.",success:"Ride confirmed!"}
+  pt: {start:"Ponto de partida:",end:"Destino:",phone:"Telefone do cliente:",baggage:"Bagagem:",time:"Agendar horário (opcional):",urgent:"Urgente?",calculate:"Calcular Corrida",confirm:"Confirmar Corrida",price:"Preço total:",alert:"Preencha ponto de partida, destino e telefone.",success:"Corrida confirmada!",baggageOptions:["Sem bagagem","1 mala","2 malas","3 malas","4 malas","5 malas"]},
+  it: {start:"Partenza:",end:"Destinazione:",phone:"Telefono cliente:",baggage:"Bagaglio:",time:"Orario opzionale:",urgent:"Urgente?",calculate:"Calcola Corsa",confirm:"Conferma Corsa",price:"Prezzo totale:",alert:"Inserisci partenza, destinazione e telefono.",success:"Corsa confermata!",baggageOptions:["Nessun bagaglio","1 bagaglio","2 bagagli","3 bagagli","4 bagagli","5 bagagli"]},
+  es: {start:"Punto de partida:",end:"Destino:",phone:"Teléfono del cliente:",baggage:"Equipaje:",time:"Horario opcional:",urgent:"¿Urgente?",calculate:"Calcular Carrera",confirm:"Confirmar Carrera",price:"Precio total:",alert:"Complete punto de partida, destino y teléfono.",success:"¡Carrera confirmada!",baggageOptions:["Sin equipaje","1 maleta","2 maletas","3 maletas","4 maletas","5 maletas"]},
+  en: {start:"Start:",end:"Destination:",phone:"Customer phone:",baggage:"Luggage:",time:"Optional time:",urgent:"Urgent?",calculate:"Calculate Ride",confirm:"Confirm Ride",price:"Total price:",alert:"Fill start, destination and phone.",success:"Ride confirmed!",baggageOptions:["No luggage","1 bag","2 bags","3 bags","4 bags","5 bags"]}
 };
 
 let currentLang = 'pt';
@@ -86,11 +79,23 @@ function setLanguage(lang){
   document.getElementById('label-urgent').innerText = translations[lang].urgent;
   document.getElementById('calculate-btn').innerText = translations[lang].calculate;
   document.getElementById('confirm-btn').innerText = translations[lang].confirm;
+  // Atualiza opções de bagagem
+  const baggageSelect = document.getElementById('baggage');
+  baggageSelect.innerHTML = '';
+  translations[lang].baggageOptions.forEach((opt,i)=>{
+    const option = document.createElement('option');
+    option.value = i;
+    option.text = opt;
+    baggageSelect.add(option);
+  });
 }
 
-let mapService;
+let mapService, autocompleteStart, autocompleteEnd;
 function initMap() {
   mapService = new google.maps.DistanceMatrixService();
+  autocompleteStart = new google.maps.places.Autocomplete(document.getElementById('start'), {componentRestrictions: {country: 'it'}});
+  autocompleteEnd = new google.maps.places.Autocomplete(document.getElementById('end'), {componentRestrictions: {country: 'it'}});
+  setLanguage(currentLang); // Inicializa opções
 }
 
 function calculateRide(){
@@ -131,6 +136,6 @@ function confirmRide(){
     .catch(err => alert("Erro ao enviar mensagem: "+err));
 }
 </script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w&callback=initMap"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w&libraries=places&callback=initMap"></script>
 </body>
 </html>
