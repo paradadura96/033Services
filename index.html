@@ -1,92 +1,120 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>033Services 🚗🏁</title>
+<title>Taxi Privato</title>
 <style>
-body { font-family: Arial, sans-serif; background: #111; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; }
-#container { width: 100%; max-width: 400px; background: #222; border-radius: 10px; padding: 20px; }
-input, select, button { width: 100%; margin: 6px 0; padding: 10px; border-radius: 6px; border: none; font-size: 16px; }
-button { background: #5b2cff; color: #fff; cursor: pointer; }
-label { margin-top: 10px; display: block; }
+    body {
+        margin: 0;
+        background: #111;
+        font-family: Arial, sans-serif;
+        color: #fff;
+    }
+    .container {
+        max-width: 500px;
+        margin: auto;
+        padding: 20px;
+    }
+    .card {
+        background: #222;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 0 15px rgba(255,255,255,0.08);
+    }
+    input {
+        width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+        border-radius: 8px;
+        border: none;
+        background: #333;
+        color: white;
+    }
+    button {
+        width: 100%;
+        padding: 15px;
+        margin-top: 15px;
+        border: none;
+        border-radius: 8px;
+        background: #6A0DAD;
+        color: #fff;
+        font-size: 17px;
+        cursor: pointer;
+    }
+    #result {
+        margin-top: 15px;
+        font-size: 18px;
+    }
 </style>
 </head>
 <body>
-<div id="container">
-<h2>033Services 🚗🏁</h2>
 
-<label>Ponto de partida:</label>
-<input type="text" id="start" placeholder="Ex: Via Roma 10">
+<div class="container">
+    <div class="card">
+        <h2>Taxi Privato - Nord Italia</h2>
 
-<label>Destino:</label>
-<input type="text" id="end" placeholder="Ex: Piazza Castello">
+        <label>Partenza</label>
+        <input type="text" id="start" placeholder="Indirizzo di partenza">
 
-<label>Telefone do cliente:</label>
-<input type="text" id="phone" placeholder="Ex: +39 3519117500">
+        <label>Destinazione</label>
+        <input type="text" id="end" placeholder="Indirizzo di arrivo">
 
-<label>Bagagem:</label>
-<select id="baggage">
-  <option value="0">Sem bagagem</option>
-  <option value="1">1 mala</option>
-  <option value="2">2 malas</option>
-  <option value="3">3 malas</option>
-  <option value="4">4 malas</option>
-  <option value="5">5 malas</option>
-</select>
+        <button onclick="calcola()">Calcola Preventivo</button>
 
-<label>Agendar horário (opcional):</label>
-<input type="time" id="time">
-
-<label>Urgente?</label>
-<select id="urgent">
-  <option value="0">Não</option>
-  <option value="1">Sim</option>
-</select>
-
-<button onclick="calculateAndSend()">Calcular Corrida</button>
-
-<p id="result"></p>
+        <div id="result"></div>
+    </div>
 </div>
 
 <script>
-const BOT_TOKEN = "COLOQUE_SEU_TOKEN_AQUI";
-const CHAT_ID = "COLOQUE_SEU_CHAT_ID_AQUI";
+// CHIAVE API GOOGLE (coloca a sua)
+const apiKey = "SUA_GOOGLE_API_KEY";
 
-function calculateAndSend(){
-  const start = document.getElementById("start").value;
-  const end = document.getElementById("end").value;
-  const phone = document.getElementById("phone").value;
-  const baggage = parseInt(document.getElementById("baggage").value);
-  const time = document.getElementById("time").value;
-  const urgent = parseInt(document.getElementById("urgent").value);
+// TELEGRAM
+const botToken = "SEU_BOT_TOKEN";
+const chatId = "SEU_CHAT_ID";
 
-  if(!start || !end || !phone){
-    alert("Preencha ponto de partida, destino e telefone.");
-    return;
-  }
+// PREZZO
+const prezzo_km = 1.2; 
 
-  // DISTÂNCIA FIXA PARA TESTE (vai trocar por API Google depois)
-  const distanceKm = 5; // km, exemplo Torino
-  let price = 5 + distanceKm*1.75; // 5€ deslocamento + 1.75€/km
+function calcola() {
+    const start = document.getElementById("start").value;
+    const end = document.getElementById("end").value;
 
-  // Bagagem: acima de 3, +2€ a cada 2 malas
-  if(baggage > 3){
-    price += Math.ceil((baggage-3)/2)*2;
-  }
-  if(urgent) price += 1;
-  if(time) price += 1;
+    if (!start || !end) {
+        document.getElementById("result").innerHTML = "Inserisci i due indirizzi.";
+        return;
+    }
 
-  document.getElementById("result").innerText = `Preço total: ${price.toFixed(2)} €`;
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(start)}&destination=${encodeURIComponent(end)}&region=it&key=${apiKey}`;
 
-  // Monta mensagem para o Telegram
-  const message = `🚗 Nova Corrida!\nPonto de partida: ${start}\nDestino: ${end}\nTelefone: ${phone}\nBagagem: ${baggage}\nHorário: ${time || "Não agendado"}\nUrgente: ${urgent ? "Sim" : "Não"}\nPreço: ${price.toFixed(2)} €`;
+    fetch("https://cors-anywhere.herokuapp.com/" + url) // evita bloqueio CORS
+    .then(res => res.json())
+    .then(data => {
+        if (!data.routes || data.routes.length === 0) {
+            document.getElementById("result").innerHTML = "Percorso non trovato.";
+            return;
+        }
 
-  // Envia para o Telegram
-  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(message)}`)
-    .then(() => console.log("Mensagem enviada"))
-    .catch(err => console.error("Erro:", err));
+        const distanza_m = data.routes[0].legs[0].distance.value;
+        const tempo_s = data.routes[0].legs[0].duration.value;
+
+        const km = (distanza_m / 1000).toFixed(1);
+        const minuti = Math.round(tempo_s / 60);
+        const prezzo = (km * prezzo_km).toFixed(2);
+
+        document.getElementById("result").innerHTML = `
+            🚗 Distanza: <b>${km} km</b><br>
+            ⏱ Tempo stimato: <b>${minuti} min</b><br>
+            💶 Prezzo: <b>€${prezzo}</b><br><br>
+            ✅ Ti risponderò subito nel messaggio!
+        `;
+
+        // manda para Telegram
+        const messaggio = `📍 NUOVA CORSA\n\nPartenza: ${start}\nArrivo: ${end}\nDistanza: ${km} km\nTempo: ${minuti} min\nPrezzo: €${prezzo}`;
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(messaggio)}`);
+    });
 }
 </script>
+
 </body>
 </html>
