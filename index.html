@@ -3,117 +3,90 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>033Services Chat</title>
+<title>033Services 🚗🏁</title>
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #111;
-  color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-#chat-container {
-  width: 100%;
-  max-width: 400px;
-  background: #222;
-  border-radius: 10px;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-}
-#chat-box {
-  flex: 1;
-  background: #333;
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 10px;
-  height: 400px;
-  overflow-y: auto;
-}
-.msg {
-  margin: 5px 0;
-  padding: 8px 12px;
-  border-radius: 8px;
-  max-width: 80%;
-  word-wrap: break-word;
-}
-.client {
-  background: #5b2cff;
-  align-self: flex-end;
-}
-.driver {
-  background: #444;
-  align-self: flex-start;
-}
-#input-area {
-  display: flex;
-}
-#msg-input {
-  flex: 1;
-  padding: 10px;
-  border-radius: 6px;
-  border: none;
-  font-size: 16px;
-}
-#send-btn {
-  padding: 10px;
-  margin-left: 5px;
-  border-radius: 6px;
-  border: none;
-  background: #5b2cff;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
-}
+body { font-family: Arial, sans-serif; background: #111; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; }
+#container { width: 100%; max-width: 400px; background: #222; border-radius: 10px; padding: 20px; }
+input, select, button { width: 100%; margin: 6px 0; padding: 10px; border-radius: 6px; border: none; font-size: 16px; }
+button { background: #5b2cff; color: #fff; cursor: pointer; }
+label { margin-top: 10px; display: block; }
 </style>
 </head>
 <body>
-<div id="chat-container">
-  <div id="chat-box"></div>
-  <div id="input-area">
-    <input type="text" id="msg-input" placeholder="Digite sua mensagem...">
-    <button id="send-btn" onclick="sendMessage()">Enviar</button>
-  </div>
+<div id="container">
+<h2>033Services 🚗🏁</h2>
+
+<label>Ponto de partida:</label>
+<input type="text" id="start" placeholder="Ex: Via Roma 10">
+
+<label>Destino:</label>
+<input type="text" id="end" placeholder="Ex: Piazza Castello">
+
+<label>Telefone do cliente:</label>
+<input type="text" id="phone" placeholder="Ex: +39 3519117500">
+
+<label>Bagagem:</label>
+<select id="baggage">
+  <option value="0">Sem bagagem</option>
+  <option value="1">1 mala</option>
+  <option value="2">2 malas</option>
+  <option value="3">3 malas</option>
+  <option value="4">4 malas</option>
+  <option value="5">5 malas</option>
+</select>
+
+<label>Agendar horário (opcional):</label>
+<input type="time" id="time">
+
+<label>Urgente?</label>
+<select id="urgent">
+  <option value="0">Não</option>
+  <option value="1">Sim</option>
+</select>
+
+<button onclick="calculateAndSend()">Calcular Corrida</button>
+
+<p id="result"></p>
 </div>
 
 <script>
-const chatBox = document.getElementById("chat-box");
-const TELEGRAM_BOT_TOKEN = "COLOQUE_AQUI_SEU_TOKEN";
-const TELEGRAM_CHAT_ID = "COLOQUE_AQUI_SEU_CHAT_ID";
+const BOT_TOKEN = "COLOQUE_SEU_TOKEN_AQUI";
+const CHAT_ID = "COLOQUE_SEU_CHAT_ID_AQUI";
 
-// Função para enviar mensagem para o bot
-function sendMessage() {
-  const msg = document.getElementById("msg-input").value.trim();
-  if(msg === "") return;
-  displayMessage(msg, "client");
-  
-  // envia mensagem para o Telegram Bot
-  fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent("[CLIENTE]: " + msg)}`)
-    .then(response => console.log("Mensagem enviada para Telegram"))
-    .catch(err => console.error("Erro ao enviar:", err));
-  
-  document.getElementById("msg-input").value = "";
+function calculateAndSend(){
+  const start = document.getElementById("start").value;
+  const end = document.getElementById("end").value;
+  const phone = document.getElementById("phone").value;
+  const baggage = parseInt(document.getElementById("baggage").value);
+  const time = document.getElementById("time").value;
+  const urgent = parseInt(document.getElementById("urgent").value);
+
+  if(!start || !end || !phone){
+    alert("Preencha ponto de partida, destino e telefone.");
+    return;
+  }
+
+  // DISTÂNCIA FIXA PARA TESTE (vai trocar por API Google depois)
+  const distanceKm = 5; // km, exemplo Torino
+  let price = 5 + distanceKm*1.75; // 5€ deslocamento + 1.75€/km
+
+  // Bagagem: acima de 3, +2€ a cada 2 malas
+  if(baggage > 3){
+    price += Math.ceil((baggage-3)/2)*2;
+  }
+  if(urgent) price += 1;
+  if(time) price += 1;
+
+  document.getElementById("result").innerText = `Preço total: ${price.toFixed(2)} €`;
+
+  // Monta mensagem para o Telegram
+  const message = `🚗 Nova Corrida!\nPonto de partida: ${start}\nDestino: ${end}\nTelefone: ${phone}\nBagagem: ${baggage}\nHorário: ${time || "Não agendado"}\nUrgente: ${urgent ? "Sim" : "Não"}\nPreço: ${price.toFixed(2)} €`;
+
+  // Envia para o Telegram
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(message)}`)
+    .then(() => console.log("Mensagem enviada"))
+    .catch(err => console.error("Erro:", err));
 }
-
-// Exibe mensagem no chat local
-function displayMessage(text, from) {
-  const div = document.createElement("div");
-  div.className = "msg " + from;
-  div.textContent = text;
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-// Opcional: simula recebimento de mensagens do motorista
-// (como placeholder, depois podemos integrar respostas reais do Telegram)
-function receiveMessage(text) {
-  displayMessage(text, "driver");
-}
-
-// Teste de mensagem automática do motorista
-// setTimeout(() => receiveMessage("Olá! Recebi sua mensagem."), 3000);
 </script>
 </body>
 </html>
