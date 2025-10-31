@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>033Services 🚗🏁</title>
 <style>
-body { font-family: Arial, sans-serif; background: #111; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin:0; }
+body { font-family: Arial, sans-serif; background: #111; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin:0; }
 #container { width: 100%; max-width: 400px; background: #222; border-radius: 10px; padding: 20px; }
 input, select, button { width: 100%; margin: 6px 0; padding: 10px; border-radius: 6px; border: none; font-size: 16px; }
 button { background: #5b2cff; color: #fff; cursor: pointer; }
@@ -37,15 +37,13 @@ label { margin-top: 10px; display: block; }
 <input type="text" id="phone" placeholder="+39 345 678 9012">
 
 <label id="label-baggage">Bagagem:</label>
-<select id="baggage">
-</select>
+<select id="baggage"></select>
 
 <label id="label-time">Agendar horário (opcional):</label>
 <input type="time" id="time">
 
 <label id="label-urgent">Urgente?</label>
-<select id="urgent">
-</select>
+<select id="urgent"></select>
 
 <button onclick="calculateRide()" id="calculate-btn">Calcular Corrida</button>
 <button onclick="confirmRide()" id="confirm-btn">Confirmar Corrida</button>
@@ -58,38 +56,30 @@ const BOT_TOKEN = "8272710734:AAFniDEDva4daS0ZQs5AG0p7YABtNOaWj1w";
 const CHAT_ID = "8153703791";
 
 const translations = {
-  pt: {
-    start:"Ponto de partida:", end:"Destino:", phone:"Telefone do cliente:",
+  pt: {start:"Ponto de partida:", end:"Destino:", phone:"Telefone do cliente:",
     baggage:"Bagagem:", time:"Agendar horário (opcional):", urgent:"Urgente?",
     calculate:"Calcular Corrida", confirm:"Confirmar Corrida", price:"Preço total:",
     alert:"Preencha ponto de partida, destino e telefone.", success:"Corrida confirmada!",
     baggageOptions:["Sem bagagem","1 mala","2 malas","3 malas","4 malas","5 malas"],
-    urgentOptions:["Não","Sim"]
-  },
-  it: {
-    start:"Partenza:", end:"Destinazione:", phone:"Telefono cliente:",
+    urgentOptions:["Não","Sim"]},
+  it: {start:"Partenza:", end:"Destinazione:", phone:"Telefono cliente:",
     baggage:"Bagaglio:", time:"Orario opzionale:", urgent:"Urgente?",
     calculate:"Calcola Corsa", confirm:"Conferma Corsa", price:"Prezzo totale:",
     alert:"Inserisci partenza, destinazione e telefono.", success:"Corsa confermata!",
     baggageOptions:["Nessun bagaglio","1 valigia","2 valigie","3 valigie","4 valigie","5 valigie"],
-    urgentOptions:["No","Sì"]
-  },
-  es: {
-    start:"Punto de partida:", end:"Destino:", phone:"Teléfono del cliente:",
+    urgentOptions:["No","Sì"]},
+  es: {start:"Punto de partida:", end:"Destino:", phone:"Teléfono del cliente:",
     baggage:"Equipaje:", time:"Horario opcional:", urgent:"¿Urgente?",
     calculate:"Calcular Carrera", confirm:"Confirmar Carrera", price:"Precio total:",
     alert:"Complete punto de partida, destino y teléfono.", success:"¡Carrera confirmada!",
     baggageOptions:["Sin equipaje","1 maleta","2 maletas","3 maletas","4 maletas","5 maletas"],
-    urgentOptions:["No","Sí"]
-  },
-  en: {
-    start:"Start:", end:"Destination:", phone:"Customer phone:",
+    urgentOptions:["No","Sí"]},
+  en: {start:"Start:", end:"Destination:", phone:"Customer phone:",
     baggage:"Luggage:", time:"Optional time:", urgent:"Urgent?",
     calculate:"Calculate Ride", confirm:"Confirm Ride", price:"Total price:",
     alert:"Fill start, destination and phone.", success:"Ride confirmed!",
     baggageOptions:["No luggage","1 bag","2 bags","3 bags","4 bags","5 bags"],
-    urgentOptions:["No","Yes"]
-  }
+    urgentOptions:["No","Yes"]}
 };
 
 let currentLang = 'pt';
@@ -114,6 +104,13 @@ function setLanguage(lang){
   const urgentSelect = document.getElementById('urgent');
   urgentSelect.innerHTML = "";
   translations[lang].urgentOptions.forEach((opt,i)=>{ urgentSelect.add(new Option(opt,i)); });
+}
+
+// Google Places Autocomplete
+let autocompleteStart, autocompleteEnd;
+function initAutocomplete(){
+  autocompleteStart = new google.maps.places.Autocomplete(document.getElementById('start'), {componentRestrictions:{country:"it"}});
+  autocompleteEnd = new google.maps.places.Autocomplete(document.getElementById('end'), {componentRestrictions:{country:"it"}});
 }
 
 // Cálculo exato da distância via Google Distance Matrix API
@@ -158,6 +155,6 @@ function confirmRide(){
 
 setLanguage('pt'); // inicializa idioma
 </script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w&libraries=places&callback=initAutocomplete"></script>
 </body>
 </html>
