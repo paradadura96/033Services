@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>033Services 🚗🏁</title>
 <style>
-body { font-family: Arial, sans-serif; background: #111; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin:0; }
+body { font-family: Arial, sans-serif; background: #111; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin:0; }
 #container { width: 100%; max-width: 400px; background: #222; border-radius: 10px; padding: 20px; }
 input, select, button { width: 100%; margin: 6px 0; padding: 10px; border-radius: 6px; border: none; font-size: 16px; }
 button { background: #5b2cff; color: #fff; cursor: pointer; }
@@ -37,13 +37,23 @@ label { margin-top: 10px; display: block; }
 <input type="text" id="phone" placeholder="+39 345 678 9012">
 
 <label id="label-baggage">Bagagem:</label>
-<select id="baggage"></select>
+<select id="baggage">
+  <option value="0">Sem bagagem</option>
+  <option value="1">1 mala</option>
+  <option value="2">2 malas</option>
+  <option value="3">3 malas</option>
+  <option value="4">4 malas</option>
+  <option value="5">5 malas</option>
+</select>
 
 <label id="label-time">Agendar horário (opcional):</label>
 <input type="time" id="time">
 
 <label id="label-urgent">Urgente?</label>
-<select id="urgent"></select>
+<select id="urgent">
+  <option value="0">Não</option>
+  <option value="1">Sim</option>
+</select>
 
 <button onclick="calculateRide()" id="calculate-btn">Calcular Corrida</button>
 <button onclick="confirmRide()" id="confirm-btn">Confirmar Corrida</button>
@@ -56,30 +66,10 @@ const BOT_TOKEN = "8272710734:AAFniDEDva4daS0ZQs5AG0p7YABtNOaWj1w";
 const CHAT_ID = "8153703791";
 
 const translations = {
-  pt: {start:"Ponto de partida:", end:"Destino:", phone:"Telefone do cliente:",
-    baggage:"Bagagem:", time:"Agendar horário (opcional):", urgent:"Urgente?",
-    calculate:"Calcular Corrida", confirm:"Confirmar Corrida", price:"Preço total:",
-    alert:"Preencha ponto de partida, destino e telefone.", success:"Corrida confirmada!",
-    baggageOptions:["Sem bagagem","1 mala","2 malas","3 malas","4 malas","5 malas"],
-    urgentOptions:["Não","Sim"]},
-  it: {start:"Partenza:", end:"Destinazione:", phone:"Telefono cliente:",
-    baggage:"Bagaglio:", time:"Orario opzionale:", urgent:"Urgente?",
-    calculate:"Calcola Corsa", confirm:"Conferma Corsa", price:"Prezzo totale:",
-    alert:"Inserisci partenza, destinazione e telefono.", success:"Corsa confermata!",
-    baggageOptions:["Nessun bagaglio","1 valigia","2 valigie","3 valigie","4 valigie","5 valigie"],
-    urgentOptions:["No","Sì"]},
-  es: {start:"Punto de partida:", end:"Destino:", phone:"Teléfono del cliente:",
-    baggage:"Equipaje:", time:"Horario opcional:", urgent:"¿Urgente?",
-    calculate:"Calcular Carrera", confirm:"Confirmar Carrera", price:"Precio total:",
-    alert:"Complete punto de partida, destino y teléfono.", success:"¡Carrera confirmada!",
-    baggageOptions:["Sin equipaje","1 maleta","2 maletas","3 maletas","4 maletas","5 maletas"],
-    urgentOptions:["No","Sí"]},
-  en: {start:"Start:", end:"Destination:", phone:"Customer phone:",
-    baggage:"Luggage:", time:"Optional time:", urgent:"Urgent?",
-    calculate:"Calculate Ride", confirm:"Confirm Ride", price:"Total price:",
-    alert:"Fill start, destination and phone.", success:"Ride confirmed!",
-    baggageOptions:["No luggage","1 bag","2 bags","3 bags","4 bags","5 bags"],
-    urgentOptions:["No","Yes"]}
+  pt: {start:"Ponto de partida:",end:"Destino:",phone:"Telefone do cliente:",baggage:"Bagagem:",time:"Agendar horário (opcional):",urgent:"Urgente?",calculate:"Calcular Corrida",confirm:"Confirmar Corrida",price:"Preço total:",alert:"Preencha ponto de partida, destino e telefone.",success:"Corrida confirmada!"},
+  it: {start:"Partenza:",end:"Destinazione:",phone:"Telefono cliente:",baggage:"Bagaglio:",time:"Orario opzionale:",urgent:"Urgente?",calculate:"Calcola Corsa",confirm:"Conferma Corsa",price:"Prezzo totale:",alert:"Inserisci partenza, destinazione e telefono.",success:"Corsa confermata!"},
+  es: {start:"Punto de partida:",end:"Destino:",phone:"Teléfono del cliente:",baggage:"Equipaje:",time:"Horario opcional:",urgent:"¿Urgente?",calculate:"Calcular Carrera",confirm:"Confirmar Carrera",price:"Precio total:",alert:"Complete punto de partida, destino y teléfono.",success:"¡Carrera confirmada!"},
+  en: {start:"Start:",end:"Destination:",phone:"Customer phone:",baggage:"Luggage:",time:"Optional time:",urgent:"Urgent?",calculate:"Calculate Ride",confirm:"Confirm Ride",price:"Total price:",alert:"Fill start, destination and phone.",success:"Ride confirmed!"}
 };
 
 let currentLang = 'pt';
@@ -96,24 +86,13 @@ function setLanguage(lang){
   document.getElementById('label-urgent').innerText = translations[lang].urgent;
   document.getElementById('calculate-btn').innerText = translations[lang].calculate;
   document.getElementById('confirm-btn').innerText = translations[lang].confirm;
-
-  const baggageSelect = document.getElementById('baggage');
-  baggageSelect.innerHTML = "";
-  translations[lang].baggageOptions.forEach((opt,i)=>{ baggageSelect.add(new Option(opt,i)); });
-
-  const urgentSelect = document.getElementById('urgent');
-  urgentSelect.innerHTML = "";
-  translations[lang].urgentOptions.forEach((opt,i)=>{ urgentSelect.add(new Option(opt,i)); });
 }
 
-// Google Places Autocomplete
-let autocompleteStart, autocompleteEnd;
-function initAutocomplete(){
-  autocompleteStart = new google.maps.places.Autocomplete(document.getElementById('start'), {componentRestrictions:{country:"it"}});
-  autocompleteEnd = new google.maps.places.Autocomplete(document.getElementById('end'), {componentRestrictions:{country:"it"}});
+let mapService;
+function initMap() {
+  mapService = new google.maps.DistanceMatrixService();
 }
 
-// Cálculo exato da distância via Google Distance Matrix API
 function calculateRide(){
   const start = document.getElementById("start").value.trim();
   const end = document.getElementById("end").value.trim();
@@ -124,20 +103,20 @@ function calculateRide(){
 
   if(!start || !end || !phone){ alert(translations[currentLang].alert); return; }
 
-  const service = new google.maps.DistanceMatrixService();
-  service.getDistanceMatrix({
+  mapService.getDistanceMatrix({
     origins: [start],
     destinations: [end],
     travelMode: 'DRIVING',
     unitSystem: google.maps.UnitSystem.METRIC,
-  }, (response, status)=>{
-    if(status==='OK'){
+  }, (response, status) => {
+    if(status === 'OK'){
       const distanceKm = response.rows[0].elements[0].distance.value / 1000;
       let price = 5 + distanceKm*1.75;
       if(baggage>3) price += Math.ceil((baggage-3)/2)*2;
       if(urgent) price +=1;
       if(time) price +=1;
       currentPrice = price;
+
       currentMessage = `🚗 Nova Corrida!\nPonto de partida: ${start}\nDestino: ${end}\nTelefone: ${phone}\nBagagem: ${baggage}\nHorário: ${time || "Não agendado"}\nUrgente: ${urgent ? "Sim":"Não"}\nPreço: ${price.toFixed(2)}`;
       document.getElementById("result").innerText = `${translations[currentLang].price} ${price.toFixed(2)}`;
       document.getElementById("confirm-btn").style.display = "block";
@@ -145,16 +124,13 @@ function calculateRide(){
   });
 }
 
-// Envia mensagem para Telegram
 function confirmRide(){
   if(!currentMessage){ alert("Calcule a corrida antes de confirmar."); return; }
   fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(currentMessage)}`)
-    .then(()=>alert(translations[currentLang].success))
-    .catch(err=>alert("Erro ao enviar mensagem: "+err));
+    .then(() => alert(translations[currentLang].success))
+    .catch(err => alert("Erro ao enviar mensagem: "+err));
 }
-
-setLanguage('pt'); // inicializa idioma
 </script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w&libraries=places&callback=initAutocomplete"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD80DEeC3v7q5rXsLKY_xC02bVMq0g5e1w&callback=initMap"></script>
 </body>
 </html>
