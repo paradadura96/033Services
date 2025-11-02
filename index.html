@@ -38,12 +38,12 @@ label { margin-top: 10px; display: block; }
 
 <label id="label-baggage">Bagagem:</label>
 <select id="baggage">
-  <option value="0">Sem bagagem</option>
-  <option value="1">1 mala</option>
-  <option value="2">2 malas</option>
-  <option value="3">3 malas</option>
-  <option value="4">4 malas</option>
-  <option value="5">5 malas</option>
+  <option value="0" data-pt="Sem bagagem" data-it="Nessun bagaglio" data-es="Sin equipaje" data-en="No luggage">Sem bagagem</option>
+  <option value="1" data-pt="1 mala" data-it="1 valigia" data-es="1 maleta" data-en="1 bag">1 mala</option>
+  <option value="2" data-pt="2 malas" data-it="2 valigie" data-es="2 maletas" data-en="2 bags">2 malas</option>
+  <option value="3" data-pt="3 malas" data-it="3 valigie" data-es="3 maletas" data-en="3 bags">3 malas</option>
+  <option value="4" data-pt="4 malas" data-it="4 valigie" data-es="4 maletas" data-en="4 bags">4 malas</option>
+  <option value="5" data-pt="5 malas" data-it="5 valigie" data-es="5 maletas" data-en="5 bags">5 malas</option>
 </select>
 
 <label id="label-time">Agendar horário (opcional):</label>
@@ -51,8 +51,8 @@ label { margin-top: 10px; display: block; }
 
 <label id="label-urgent">Urgente?</label>
 <select id="urgent">
-  <option value="0">Não</option>
-  <option value="1">Sim</option>
+  <option value="0" data-pt="Não" data-it="No" data-es="No" data-en="No">Não</option>
+  <option value="1" data-pt="Sim" data-it="Sì" data-es="Sí" data-en="Yes">Sim</option>
 </select>
 
 <button onclick="calculateRide()" id="calculate-btn">Calcular Corrida</button>
@@ -86,6 +86,16 @@ function setLanguage(lang){
   document.getElementById('label-urgent').innerText = translations[lang].urgent;
   document.getElementById('calculate-btn').innerText = translations[lang].calculate;
   document.getElementById('confirm-btn').innerText = translations[lang].confirm;
+
+  // 🔥 TRADUZ AS OPÇÕES DE BAGAGEM
+  document.querySelectorAll("#baggage option").forEach(opt => {
+    opt.innerText = opt.dataset[lang];
+  });
+
+  // 🔥 TRADUZ AS OPÇÕES DE URGENTE
+  document.querySelectorAll("#urgent option").forEach(opt => {
+    opt.innerText = opt.dataset[lang];
+  });
 }
 
 let mapService;
